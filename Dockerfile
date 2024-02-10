@@ -1,11 +1,5 @@
-# Use the official PHP 7.3 FPM image as a base image
-FROM php:7.3-fpm
-
-# add info created by me
-LABEL Name=dev:php7.3-fpm \
-    Version=0.0.1 \
-    Maintainer="Weda Dewa <weda.dewa.yahoo.co.id>" \
-    Description="Image PHP developer on Debian Linux."
+# Use the official PHP 8.2 FPM image as a base image
+FROM php:8.2-fpm
 
 # Update package list and install dependencies
 RUN apt-get update && apt-get install -y \
@@ -41,16 +35,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install xdebug and redis in the same layer as they don't have any extra dependencies
-# Update PECL
-RUN pecl channel-update pecl.php.net
-
-# Install compatible version of xdebug for PHP 7.4
-RUN pecl install xdebug-2.9.8 \
-    && docker-php-ext-enable xdebug
-
-# Install redis
-RUN pecl install redis \
-    && docker-php-ext-enable redis
+RUN pecl install xdebug redis \
+    && docker-php-ext-enable xdebug redis
 
 # Install NVM (Node Version Manager)
 ENV NVM_DIR /usr/local/nvm
@@ -68,17 +54,34 @@ ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 # Install MySQL client and related dependencies
 RUN apt-get update \
     && apt-get install -y default-mysql-client \
-    && docker-php-ext-install pdo_mysql mysqli\
+    && docker-php-ext-install pdo_mysql \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PostgreSQL client and related dependencies
 RUN apt-get update \
     && apt-get install -y postgresql-client \
-    && docker-php-ext-install pdo_pgsql pgsql\
+    && docker-php-ext-install pdo_pgsql \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Install SQL Server client (MSSQL) and related dependencies
+RUN apt-get update \
+    && curl -s https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && curl -s https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools unixodbc-dev \
+    && pecl install pdo_sqlsrv \
+    && docker-php-ext-enable pdo_sqlsrv \
+    # Add the path to MSSQL tools for convenience
+    && echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc \
+    && /bin/bash -c "source ~/.bashrc" \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clean up the apt cache to reduce image size
+RUN apt-get clean \
+    && rm -rf /var/lib/apt/lists/* 
 
 # Set the working directory
 WORKDIR /var/www/html
@@ -91,4 +94,4 @@ WORKDIR /var/www/html
 # COPY ./scripts/ /usr/local/bin/
 
 # Start the PHP-FPM server
-CMD ["php-fpm", "-F"]
+CMD ["php-fpm"]
