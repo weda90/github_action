@@ -66,18 +66,18 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install SQL Server client (MSSQL) and related dependencies
-RUN apt-get update \
-    && curl -s https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl -s https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
-    && apt-get update \
-    && ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools unixodbc-dev \
-    && pecl install pdo_sqlsrv \
-    && docker-php-ext-enable pdo_sqlsrv \
-    # Add the path to MSSQL tools for convenience
-    && echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc \
-    && /bin/bash -c "source ~/.bashrc" \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update \
+#     && curl -s https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+#     && curl -s https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+#     && apt-get update \
+#     && ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools unixodbc-dev \
+#     && pecl install pdo_sqlsrv \
+#     && docker-php-ext-enable pdo_sqlsrv \
+#     # Add the path to MSSQL tools for convenience
+#     && echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc \
+#     && /bin/bash -c "source ~/.bashrc" \
+#     && apt-get clean \
+#     && rm -rf /var/lib/apt/lists/*
 
 # Clean up the apt cache to reduce image size
 RUN apt-get clean \
