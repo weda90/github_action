@@ -26,4 +26,6 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: weda90/dev-php:7.3-fpm
+          tags: weda90/dev:php7.3-fpm
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
