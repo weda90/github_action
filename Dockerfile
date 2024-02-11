@@ -20,5 +20,8 @@ RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
     
 RUN apt-get clean && \
  rm -rf /var/lib/apt/lists/*
+
+RUN  ln -s /usr/bin/python3 /usr/bin/python
+
 # Set the default command to run when a container is started
 CMD ["bash"]
