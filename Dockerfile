@@ -1,94 +1,46 @@
-# Use the official PHP 7.3 FPM image as a base image
-FROM php:7.3-fpm
+# Use a base image with Ubuntu or another suitable OS
+FROM ubuntu:latest
 
-# add info created by me
-LABEL Name=dev:php7.3-fpm \
-    Version=0.0.1 \
-    Maintainer="Weda Dewa <weda.dewa.yahoo.co.id>" \
-    Description="Image PHP developer on Debian Linux."
+# Install required packages and clean up after installation
+RUN apt-get update && \
+    apt-get install -y wget libaio1 libncurses5 && \
+    rm -rf /var/lib/apt/lists/*
 
-# Update package list and install dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    apt-transport-https \
-    ca-certificates \
-    gnupg \
-    lsb-release
+# Download MySQL 5.6.46 from MySQL site and extract it
+WORKDIR /tmp
+RUN wget https://downloads.mysql.com/archives/get/p/23/file/mysql-5.1.73-linux-x86_64-glibc23.tar.gz && \
+    tar -xvf mysql-5.1.73-linux-x86_64-glibc23.tar.gz -C /usr/local/ && \
+    rm mysql-5.1.73-linux-x86_64-glibc23.tar.gz
 
-# Install Docker CLI (Note that usually installing Docker inside a Docker container is not recommended)
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list \
-    && apt-get update \
-    && apt-get install -y docker-ce-cli
+# Create mysql user group and user with the correct ownership settings
+RUN groupadd mysql && \
+    useradd -g mysql mysql && \
+    chown -R mysql:mysql /usr/local/mysql
 
+# Set environment variables
+ENV MYSQL_USER=root
+ENV MYSQL_PASSWORD=secret
+ENV MYSQL_PORT=3306
+ENV MYSQL_ROOT_PASSWORD=password
+ENV MYSQL_ALLOW_EMPTY_PASSWORD=yes
 
-# Install Composer globally
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Copy configuration file and set permissions
+COPY ./my.cnf /etc/my.cnf
+RUN chmod 644 /etc/my.cnf
 
-# Install system dependencies and other PHP extensions not related to specific database types
-RUN apt-get update && apt-get install -y \
-        libzip-dev \
-        libpng-dev \
-        libonig-dev \
-        libxml2-dev \
-        libpq-dev \
-        libsqlite3-dev \
-        curl \
-        wget \
-    && docker-php-ext-install zip mbstring xml pdo_sqlite \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Create necessary directories with correct ownership and permissions
+RUN mkdir -p /var/log/mysql && \
+    chown mysql:mysql /var/log/mysql && \
+    mkdir -p /var/run/mysqld/ && \
+    chown -R mysql:mysql /var/run/mysqld/ && \
+    chmod 0755 /var/run/mysqld/
 
-# Install xdebug and redis in the same layer as they don't have any extra dependencies
-# Update PECL
-RUN pecl channel-update pecl.php.net
+# Initialize MySQL data directory and set root password
+RUN /usr/local/mysql/scripts/mysql_install_db --user=mysql --ldata=/var/lib/mysql && \
+    /usr/local/mysql/bin/mysqladmin -u root password $MYSQL_ROOT_PASSWORD
 
-# Install compatible version of xdebug for PHP 7.4
-RUN pecl install xdebug-2.9.8 \
-    && docker-php-ext-enable xdebug
+# Expose the MySQL port
+EXPOSE $MYSQL_PORT
 
-# Install redis
-RUN pecl install redis \
-    && docker-php-ext-enable redis
-
-# Install NVM (Node Version Manager)
-ENV NVM_DIR /usr/local/nvm
-ENV NODE_VERSION node
-RUN mkdir -p $NVM_DIR \
-    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash \
-    && . $NVM_DIR/nvm.sh \
-    && nvm install $NODE_VERSION \
-    && nvm alias default $NODE_VERSION \
-    && nvm use default
-
-# Make sure to source nvm when starting the shell.
-ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
-
-# Install MySQL client and related dependencies
-RUN apt-get update \
-    && apt-get install -y default-mysql-client \
-    && docker-php-ext-install pdo_mysql mysqli\
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install PostgreSQL client and related dependencies
-RUN apt-get update \
-    && apt-get install -y postgresql-client \
-    && docker-php-ext-install pdo_pgsql pgsql\
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-
-# Set the working directory
-WORKDIR /var/www/html
-
-# Optional: If you want to write a custom php.ini, you could add:
-# COPY ./php.ini $PHP_INI_DIR/conf.d/
-
-# Copy over any scripts or additional setup you might have
-# Example:
-# COPY ./scripts/ /usr/local/bin/
-
-# Start the PHP-FPM server
-CMD ["php-fpm", "-F"]
+# Start MySQL server using mysqld_safe script
+CMD ["/usr/local/mysql/bin/mysqld_safe", "--user=mysql"]
