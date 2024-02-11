@@ -1,7 +1,7 @@
 FROM ubuntu:latest
 LABEL Name=nodejs Version=0.0.1
 
-ARG NODE_VERSION=lts
+ARG NODE_VERSION=--lts
 
 RUN apt-get update && apt-get install -y \
   git \
