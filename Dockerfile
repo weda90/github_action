@@ -79,6 +79,15 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Update package information and install librdkafka-dev
+RUN apt update && \
+    apt install -y librdkafka-dev && \
+    pecl install rdkafka && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Enable the rdkafka extension by adding it to rdkafka.ini file
+RUN echo "extension=rdkafka.so" | tee /usr/local/etc/php/conf.d/20-rdkafka.ini
 
 # Set the working directory
 WORKDIR /var/www/html
