@@ -3,7 +3,7 @@ name: ci
 on:
   push:
     branches:
-      - "php-8"
+      - "php-8.1"
 
 jobs:
   docker:
@@ -26,6 +26,6 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: weda90/dev:php8.2-fpm
+          tags: weda90/dev:php8.1-fpm
           cache-from: type=gha
           cache-to: type=gha,mode=max

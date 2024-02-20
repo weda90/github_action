@@ -1,5 +1,5 @@
-# Use the official PHP 8.2 FPM image as a base image
-FROM php:8.2-fpm
+# Use the official PHP 8.1 FPM image as a base image
+FROM php:8.1-fpm
 
 # Update package list and install dependencies
 RUN apt-get update && apt-get install -y \
@@ -64,6 +64,15 @@ RUN apt-get update \
     && docker-php-ext-install pdo_pgsql \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Install required dependencies and enable mysqli extension
+RUN docker-php-ext-install mysqli
+
+# Install additional dependencies for calendar extension
+RUN apt-get update && apt-get install -y \
+    libonig-dev \
+    libxml2-dev \
+    && docker-php-ext-install -j$(nproc) calendar
 
 # Install SQL Server client (MSSQL) and related dependencies
 # RUN apt-get update \
