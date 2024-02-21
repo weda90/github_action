@@ -23,5 +23,9 @@ RUN apt-get clean && \
 
 RUN  ln -s /usr/bin/python3 /usr/bin/python
 
+# Install poetry
+RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN export PATH="/root/.local/bin:$PATH"
+
 # Set the default command to run when a container is started
 CMD ["bash"]
